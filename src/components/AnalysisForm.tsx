@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -293,230 +292,221 @@ export const AnalysisForm = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          Speech & Language Analysis Tool
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Analyze audio content for speech quality, language proficiency, and get comprehensive AI-powered insights
-        </p>
-      </div>
-
-      {/* Input Form */}
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Play className="h-5 w-5" />
-            Input Parameters
-          </CardTitle>
-          <CardDescription>
-            Provide the audio URL and model answer for comprehensive analysis
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="url">Audio URL</Label>
-            <Input
-              id="url"
-              type="url"
-              placeholder="https://example.com/audio.wav"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="text-base"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="modelAnswer">Model Answer</Label>
-            <Textarea
-              id="modelAnswer"
-              placeholder="Enter the expected or ideal answer for comparison..."
-              value={modelAnswer}
-              onChange={(e) => setModelAnswer(e.target.value)}
-              rows={4}
-              className="text-base"
-            />
-          </div>
-          
-          <Button 
-            onClick={handleAnalyze} 
-            disabled={isAnalyzing}
-            className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Analyzing Audio...
-              </>
-            ) : (
-              <>
-                <BarChart3 className="mr-2 h-5 w-5" />
-                Analyze Audio
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Results */}
-      {results && (
-        <div className="grid gap-6">
-          {/* Lambda Raw Response */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Lambda Raw Response
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm max-h-96 overflow-y-auto">
-                {JSON.stringify(results.lambdaRawResponse, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-
-          {/* Transcript */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Transcript
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base leading-relaxed bg-blue-50 p-4 rounded-lg">
-                {results.transcript}
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Speech Metrics */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Speech Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Speech Rate</div>
-                    <div className="text-xl font-bold">{results.speechMetrics.speech_rate_wpm} WPM</div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Confidence</div>
-                    <div className="text-xl font-bold">{(results.speechMetrics.avg_confidence * 100).toFixed(1)}%</div>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Duration</div>
-                    <div className="text-xl font-bold">{results.speechMetrics.duration_seconds.toFixed(1)}s</div>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Word Count</div>
-                    <div className="text-xl font-bold">{results.speechMetrics.word_count}</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-600">Pause Analysis</div>
-                  <div className="text-base">
-                    Total Pauses: {results.speechMetrics.pause_total_seconds.toFixed(2)}s | 
-                    Avg Pause: {results.speechMetrics.avg_pause_seconds.toFixed(2)}s
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Language Metrics */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Language Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Basic Metrics</div>
-                    <div className="text-sm">
-                      Sentences: {results.languageMetrics.basic_metrics.sentence_count} | 
-                      Avg Words/Sentence: {results.languageMetrics.basic_metrics.avg_words_per_sentence.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Sentiment</div>
-                    <div className="text-lg font-bold">{results.languageMetrics.sentiment.overall_sentiment}</div>
-                    <div className="text-sm">
-                      Neutral: {(results.languageMetrics.sentiment.sentiment_scores.Neutral * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Vocabulary</div>
-                    <div className="text-sm">
-                      Unique Words: {results.languageMetrics.vocabulary.unique_words} | 
-                      Richness: {results.languageMetrics.vocabulary.vocabulary_richness.toFixed(1)}
-                    </div>
-                  </div>
-                  <div className="bg-orange-50 p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Readability</div>
-                    <div className="text-sm">
-                      Flesch Score: {results.languageMetrics.readability.flesch_reading_ease.toFixed(1)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* LLM Analysis */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                LLM Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(results.llmAnalysis).map(([dimension, data]) => {
-                  const analysis = parseAnalysis(data.analysis);
-                  const scoreKey = dimension === 'filler_words' ? 'filler_score' : 
-                                 dimension === 'content_relevance' ? 'content_score' : 
-                                 `${dimension}_score`;
-                  const score = analysis[scoreKey] || 0;
-                  
-                  return (
-                    <div key={dimension} className="bg-white border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-semibold capitalize">{dimension.replace('_', ' ')}</h4>
-                        <span className="text-2xl font-bold text-blue-600">{score}/10</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                        <div 
-                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${score * 10}%` }}
-                        ></div>
-                      </div>
-                      <p className="text-sm text-gray-700 line-clamp-3">
-                        {analysis.justification || "No analysis available"}
-                      </p>
-                      {analysis.issues > 0 && (
-                        <div className="text-xs text-orange-600 mt-2">
-                          Issues detected: {analysis.issues}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            Speech & Language Analysis Tool
+          </h1>
+          <p className="text-base text-gray-600">
+            Analyze audio content for speech quality, language proficiency, and get comprehensive AI-powered insights
+          </p>
         </div>
-      )}
+
+        {/* Input Form */}
+        <Card className="shadow-lg mb-6">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Play className="h-4 w-4" />
+              Input Parameters
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="url" className="text-sm">Audio URL</Label>
+                <Input
+                  id="url"
+                  type="url"
+                  placeholder="https://example.com/audio.wav"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="modelAnswer" className="text-sm">Model Answer</Label>
+                <Textarea
+                  id="modelAnswer"
+                  placeholder="Enter the expected or ideal answer for comparison..."
+                  value={modelAnswer}
+                  onChange={(e) => setModelAnswer(e.target.value)}
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleAnalyze} 
+              disabled={isAnalyzing}
+              className="w-full h-10 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing Audio...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Analyze Audio
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        {results && (
+          <div className="grid gap-4">
+            {/* Transcript */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <MessageSquare className="h-4 w-4" />
+                  Transcript
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed bg-blue-50 p-3 rounded-lg max-h-32 overflow-y-auto">
+                  {results.transcript}
+                </p>
+              </CardContent>
+            </Card>
+
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Speech Metrics */}
+              <Card className="shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <BarChart3 className="h-4 w-4" />
+                    Speech Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-blue-50 p-2 rounded text-center">
+                      <div className="text-xs text-gray-600">Speech Rate</div>
+                      <div className="text-lg font-bold">{results.speechMetrics.speech_rate_wpm} WPM</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded text-center">
+                      <div className="text-xs text-gray-600">Confidence</div>
+                      <div className="text-lg font-bold">{(results.speechMetrics.avg_confidence * 100).toFixed(1)}%</div>
+                    </div>
+                    <div className="bg-orange-50 p-2 rounded text-center">
+                      <div className="text-xs text-gray-600">Duration</div>
+                      <div className="text-lg font-bold">{results.speechMetrics.duration_seconds.toFixed(1)}s</div>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded text-center">
+                      <div className="text-xs text-gray-600">Words</div>
+                      <div className="text-lg font-bold">{results.speechMetrics.word_count}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    Pauses: {results.speechMetrics.pause_total_seconds.toFixed(1)}s total | 
+                    Avg: {results.speechMetrics.avg_pause_seconds.toFixed(1)}s
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Language Metrics */}
+              <Card className="shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="h-4 w-4" />
+                    Language Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="bg-blue-50 p-2 rounded">
+                    <div className="text-xs text-gray-600">Basic</div>
+                    <div className="text-xs">
+                      {results.languageMetrics.basic_metrics.sentence_count} sentences | 
+                      {results.languageMetrics.basic_metrics.avg_words_per_sentence.toFixed(1)} avg words
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded">
+                    <div className="text-xs text-gray-600">Sentiment</div>
+                    <div className="text-sm font-bold">{results.languageMetrics.sentiment.overall_sentiment}</div>
+                  </div>
+                  <div className="bg-purple-50 p-2 rounded">
+                    <div className="text-xs text-gray-600">Vocabulary</div>
+                    <div className="text-xs">
+                      {results.languageMetrics.vocabulary.unique_words} unique | 
+                      {results.languageMetrics.vocabulary.vocabulary_richness.toFixed(1)} richness
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 p-2 rounded">
+                    <div className="text-xs text-gray-600">Readability</div>
+                    <div className="text-xs">Flesch: {results.languageMetrics.readability.flesch_reading_ease.toFixed(1)}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* LLM Analysis */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Brain className="h-4 w-4" />
+                  LLM Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                  {Object.entries(results.llmAnalysis).map(([dimension, data]) => {
+                    const analysis = parseAnalysis(data.analysis);
+                    const scoreKey = dimension === 'filler_words' ? 'filler_score' : 
+                                   dimension === 'content_relevance' ? 'content_score' : 
+                                   `${dimension}_score`;
+                    const score = analysis[scoreKey] || 0;
+                    
+                    return (
+                      <div key={dimension} className="bg-white border rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-semibold text-sm capitalize">{dimension.replace('_', ' ')}</h4>
+                          <span className="text-xl font-bold text-blue-600">{score}/10</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full"
+                            style={{ width: `${score * 10}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-700 line-clamp-2">
+                          {analysis.justification || "No analysis available"}
+                        </p>
+                        {analysis.issues > 0 && (
+                          <div className="text-xs text-orange-600 mt-1">
+                            Issues: {analysis.issues}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lambda Raw Response - Collapsible */}
+            <Card className="shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-4 w-4" />
+                  Lambda Raw Response
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="bg-gray-50 p-3 rounded-lg overflow-x-auto text-xs max-h-40 overflow-y-auto">
+                  {JSON.stringify(results.lambdaRawResponse, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
