@@ -9,7 +9,6 @@ import { Loader2, Play, FileText, BarChart3, MessageSquare, Brain } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 
 interface AnalysisResults {
-  lambdaRawResponse: any;
   transcript: string;
   speech_metrics: {
     fluency_score: number;
@@ -78,43 +77,6 @@ export const AnalysisForm = () => {
       
       // Use the provided data structure
       const mockResults: AnalysisResults = {
-        lambdaRawResponse: {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            transcript: "Wondering how to pass a transcription test, we are here to help you out. A general transcriptionist usually does not need prior education or experience to get transcription jobs, but must pass a test based on typing speed and accuracy in spelling and grammar. Here are some tips to remember. Firstly, you need to type fairly fast for the sake of being productive and meeting deadlines. Find out what the company's minimum typing speed is. Stricter companies tend to set a minimum level of around 50 words per minute, while more flexible firms might go as low as 25 words per minute, or perhaps no minimum at all if deadlines are not as important. You can improve your typing speed by searching for online typing tutorials. Generally speaking, your hands and fingers need to be placed properly and comfortably instead of using the very slow one finger at a time method. Memorizing where letters and numbers are placed on the keyboard will help accelerate the learning process. Secondly, you should have a deep vocabulary in understanding a professional versus common or colloquial usage of terminology and structure. Thirdly, have spell check on your computer to double check your spelling. Fourthly, download any popular and free transcription software to help you practice transcribing before taking the test. Last but not least, adhere to instructions and follow the style guide. Proofread your work before submitting and run a spell check. For more tips to succeed as a transcriptionist, subscribe to our YouTube channel.",
-            speech_metrics: {
-              fluency_score: 8.5,
-              speech_rate_wpm: 173.14,
-              repeat_count: 0,
-              avg_confidence: 1.0,
-              pause_total_seconds: 10.07,
-              avg_pause_seconds: 0.84,
-              word_count: 251,
-              duration_seconds: 86.98
-            },
-            analysis: {
-              grammar: {
-                grammar: "{\n  \"grammar_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The text demonstrates strong grammatical accuracy with only minor issues: one instance of awkward article usage ('a deep vocabulary in understanding'), slight preposition inconsistency in 'based on typing speed' vs. 'based in typing speed', and a minor structural issue in the transition 'Last but not least.' Overall sentence structure, subject-verb agreement, tense consistency, and word forms are excellent throughout.\"\n}"
-              },
-              vocabulary: {
-                vocabulary: "{\n  \"vocabulary_score\": 8,\n  \"issues\": 4,\n  \"justification\": \"The response demonstrates sophisticated vocabulary with domain-specific terms like 'transcriptionist', 'colloquial', and 'terminology'. Strong lexical variation is evident through precise word choices ('adhere', 'accelerate', 'flexible'). Minor issues include some repetition of basic terms like 'typing' and 'spell check'. Overall maintains professional register with appropriate technical language for the context.\"\n}"
-              },
-              coherence: {
-                coherence: "{\n  \"coherence_score\": 9,\n  \"issues\": 2,\n  \"justification\": \"The response demonstrates excellent structural organization with clear enumeration (firstly through lastly) and logical progression of ideas about transcription test preparation. Strong thematic consistency throughout, with well-connected points building on each other. Effective use of transitions and cohesive devices. Only minor issues: slight redundancy in spell-check mentions and an abrupt shift to YouTube promotion at the end.\"\n}"
-              },
-              filler_words: {
-                filler_words: "{\n  \"filler_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The speech demonstrates exceptional clarity with minimal filler words. Only three notable instances were found: the softening qualifier 'around' when discussing typing speed, and two instances of 'fairly' and 'perhaps' when describing requirements. The speech maintains professional tone and direct communication throughout, with well-structured sentences and clear transitions between points.\"\n}"
-              },
-              content_relevance: {
-                content_relevance: "{\n  \"content_score\": 0,\n  \"issues\": 1,\n  \"justification\": \"The provided content appears to be a JSON transcript object rather than a user's answer that could be compared to a model answer. Without both a model answer and a user's response to compare, a meaningful content relevance evaluation cannot be performed.\"\n}"
-              }
-            }
-          })
-        },
         transcript: "Wondering how to pass a transcription test, we are here to help you out. A general transcriptionist usually does not need prior education or experience to get transcription jobs, but must pass a test based on typing speed and accuracy in spelling and grammar. Here are some tips to remember. Firstly, you need to type fairly fast for the sake of being productive and meeting deadlines. Find out what the company's minimum typing speed is. Stricter companies tend to set a minimum level of around 50 words per minute, while more flexible firms might go as low as 25 words per minute, or perhaps no minimum at all if deadlines are not as important. You can improve your typing speed by searching for online typing tutorials. Generally speaking, your hands and fingers need to be placed properly and comfortably instead of using the very slow one finger at a time method. Memorizing where letters and numbers are placed on the keyboard will help accelerate the learning process. Secondly, you should have a deep vocabulary in understanding a professional versus common or colloquial usage of terminology and structure. Thirdly, have spell check on your computer to double check your spelling. Fourthly, download any popular and free transcription software to help you practice transcribing before taking the test. Last but not least, adhere to instructions and follow the style guide. Proofread your work before submitting and run a spell check. For more tips to succeed as a transcriptionist, subscribe to our YouTube channel.",
         speech_metrics: {
           fluency_score: 8.5,
@@ -231,20 +193,6 @@ export const AnalysisForm = () => {
       {/* Results */}
       {results && (
         <div className="grid gap-6">
-          {/* Lambda Raw Response */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Lambda Raw Response
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm max-h-96">
-                {JSON.stringify(results.lambdaRawResponse, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
 
           {/* Transcript */}
           <Card className="shadow-lg">
@@ -255,7 +203,7 @@ export const AnalysisForm = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-base leading-relaxed bg-blue-50 p-4 rounded-lg">
+              <p className="text-base leading-relaxed w-full mx-auto bg-blue-50 p-4 rounded-lg">
                 {results.transcript}
               </p>
             </CardContent>
