@@ -11,25 +11,32 @@ import { useToast } from '@/hooks/use-toast';
 interface AnalysisResults {
   lambdaRawResponse: any;
   transcript: string;
-  speechMetrics: {
-    fluency: number;
-    pace: number;
-    clarity: number;
-    volume: number;
-    pronunciation: number;
+  speech_metrics: {
+    fluency_score: number;
+    speech_rate_wpm: number;
+    repeat_count: number;
+    avg_confidence: number;
+    pause_total_seconds: number;
+    avg_pause_seconds: number;
+    word_count: number;
+    duration_seconds: number;
   };
-  languageMetrics: {
-    vocabulary: number;
-    grammar: number;
-    coherence: number;
-    complexity: number;
-    accuracy: number;
-  };
-  llmAnalysis: {
-    overallScore: number;
-    strengths: string[];
-    improvements: string[];
-    summary: string;
+  analysis: {
+    grammar: {
+      grammar: string;
+    };
+    vocabulary: {
+      vocabulary: string;
+    };
+    coherence: {
+      coherence: string;
+    };
+    filler_words: {
+      filler_words: string;
+    };
+    content_relevance: {
+      content_relevance: string;
+    };
   };
 }
 
@@ -39,6 +46,19 @@ export const AnalysisForm = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
   const { toast } = useToast();
+
+  const parseAnalysisScore = (analysisString: string): { score: number; issues: number; justification: string } => {
+    try {
+      const parsed = JSON.parse(analysisString);
+      return {
+        score: parsed.grammar_score || parsed.vocabulary_score || parsed.coherence_score || parsed.filler_score || parsed.content_score || 0,
+        issues: parsed.issues || 0,
+        justification: parsed.justification || "No analysis available"
+      };
+    } catch {
+      return { score: 0, issues: 0, justification: "Failed to parse analysis" };
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!url.trim() || !modelAnswer.trim()) {
@@ -56,7 +76,7 @@ export const AnalysisForm = () => {
       // Simulate API call with realistic delay
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Mock response data
+      // Use the provided data structure
       const mockResults: AnalysisResults = {
         lambdaRawResponse: {
           statusCode: 200,
@@ -64,43 +84,64 @@ export const AnalysisForm = () => {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
           },
-          body: {
-            audioUrl: url,
-            processedAt: new Date().toISOString(),
-            duration: 45.2,
-            fileSize: '2.3MB',
-            format: 'wav'
+          body: JSON.stringify({
+            transcript: "Wondering how to pass a transcription test, we are here to help you out. A general transcriptionist usually does not need prior education or experience to get transcription jobs, but must pass a test based on typing speed and accuracy in spelling and grammar. Here are some tips to remember. Firstly, you need to type fairly fast for the sake of being productive and meeting deadlines. Find out what the company's minimum typing speed is. Stricter companies tend to set a minimum level of around 50 words per minute, while more flexible firms might go as low as 25 words per minute, or perhaps no minimum at all if deadlines are not as important. You can improve your typing speed by searching for online typing tutorials. Generally speaking, your hands and fingers need to be placed properly and comfortably instead of using the very slow one finger at a time method. Memorizing where letters and numbers are placed on the keyboard will help accelerate the learning process. Secondly, you should have a deep vocabulary in understanding a professional versus common or colloquial usage of terminology and structure. Thirdly, have spell check on your computer to double check your spelling. Fourthly, download any popular and free transcription software to help you practice transcribing before taking the test. Last but not least, adhere to instructions and follow the style guide. Proofread your work before submitting and run a spell check. For more tips to succeed as a transcriptionist, subscribe to our YouTube channel.",
+            speech_metrics: {
+              fluency_score: 8.5,
+              speech_rate_wpm: 173.14,
+              repeat_count: 0,
+              avg_confidence: 1.0,
+              pause_total_seconds: 10.07,
+              avg_pause_seconds: 0.84,
+              word_count: 251,
+              duration_seconds: 86.98
+            },
+            analysis: {
+              grammar: {
+                grammar: "{\n  \"grammar_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The text demonstrates strong grammatical accuracy with only minor issues: one instance of awkward article usage ('a deep vocabulary in understanding'), slight preposition inconsistency in 'based on typing speed' vs. 'based in typing speed', and a minor structural issue in the transition 'Last but not least.' Overall sentence structure, subject-verb agreement, tense consistency, and word forms are excellent throughout.\"\n}"
+              },
+              vocabulary: {
+                vocabulary: "{\n  \"vocabulary_score\": 8,\n  \"issues\": 4,\n  \"justification\": \"The response demonstrates sophisticated vocabulary with domain-specific terms like 'transcriptionist', 'colloquial', and 'terminology'. Strong lexical variation is evident through precise word choices ('adhere', 'accelerate', 'flexible'). Minor issues include some repetition of basic terms like 'typing' and 'spell check'. Overall maintains professional register with appropriate technical language for the context.\"\n}"
+              },
+              coherence: {
+                coherence: "{\n  \"coherence_score\": 9,\n  \"issues\": 2,\n  \"justification\": \"The response demonstrates excellent structural organization with clear enumeration (firstly through lastly) and logical progression of ideas about transcription test preparation. Strong thematic consistency throughout, with well-connected points building on each other. Effective use of transitions and cohesive devices. Only minor issues: slight redundancy in spell-check mentions and an abrupt shift to YouTube promotion at the end.\"\n}"
+              },
+              filler_words: {
+                filler_words: "{\n  \"filler_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The speech demonstrates exceptional clarity with minimal filler words. Only three notable instances were found: the softening qualifier 'around' when discussing typing speed, and two instances of 'fairly' and 'perhaps' when describing requirements. The speech maintains professional tone and direct communication throughout, with well-structured sentences and clear transitions between points.\"\n}"
+              },
+              content_relevance: {
+                content_relevance: "{\n  \"content_score\": 0,\n  \"issues\": 1,\n  \"justification\": \"The provided content appears to be a JSON transcript object rather than a user's answer that could be compared to a model answer. Without both a model answer and a user's response to compare, a meaningful content relevance evaluation cannot be performed.\"\n}"
+              }
+            }
+          })
+        },
+        transcript: "Wondering how to pass a transcription test, we are here to help you out. A general transcriptionist usually does not need prior education or experience to get transcription jobs, but must pass a test based on typing speed and accuracy in spelling and grammar. Here are some tips to remember. Firstly, you need to type fairly fast for the sake of being productive and meeting deadlines. Find out what the company's minimum typing speed is. Stricter companies tend to set a minimum level of around 50 words per minute, while more flexible firms might go as low as 25 words per minute, or perhaps no minimum at all if deadlines are not as important. You can improve your typing speed by searching for online typing tutorials. Generally speaking, your hands and fingers need to be placed properly and comfortably instead of using the very slow one finger at a time method. Memorizing where letters and numbers are placed on the keyboard will help accelerate the learning process. Secondly, you should have a deep vocabulary in understanding a professional versus common or colloquial usage of terminology and structure. Thirdly, have spell check on your computer to double check your spelling. Fourthly, download any popular and free transcription software to help you practice transcribing before taking the test. Last but not least, adhere to instructions and follow the style guide. Proofread your work before submitting and run a spell check. For more tips to succeed as a transcriptionist, subscribe to our YouTube channel.",
+        speech_metrics: {
+          fluency_score: 8.5,
+          speech_rate_wpm: 173.14,
+          repeat_count: 0,
+          avg_confidence: 1.0,
+          pause_total_seconds: 10.07,
+          avg_pause_seconds: 0.84,
+          word_count: 251,
+          duration_seconds: 86.98
+        },
+        analysis: {
+          grammar: {
+            grammar: "{\n  \"grammar_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The text demonstrates strong grammatical accuracy with only minor issues: one instance of awkward article usage ('a deep vocabulary in understanding'), slight preposition inconsistency in 'based on typing speed' vs. 'based in typing speed', and a minor structural issue in the transition 'Last but not least.' Overall sentence structure, subject-verb agreement, tense consistency, and word forms are excellent throughout.\"\n}"
+          },
+          vocabulary: {
+            vocabulary: "{\n  \"vocabulary_score\": 8,\n  \"issues\": 4,\n  \"justification\": \"The response demonstrates sophisticated vocabulary with domain-specific terms like 'transcriptionist', 'colloquial', and 'terminology'. Strong lexical variation is evident through precise word choices ('adhere', 'accelerate', 'flexible'). Minor issues include some repetition of basic terms like 'typing' and 'spell check'. Overall maintains professional register with appropriate technical language for the context.\"\n}"
+          },
+          coherence: {
+            coherence: "{\n  \"coherence_score\": 9,\n  \"issues\": 2,\n  \"justification\": \"The response demonstrates excellent structural organization with clear enumeration (firstly through lastly) and logical progression of ideas about transcription test preparation. Strong thematic consistency throughout, with well-connected points building on each other. Effective use of transitions and cohesive devices. Only minor issues: slight redundancy in spell-check mentions and an abrupt shift to YouTube promotion at the end.\"\n}"
+          },
+          filler_words: {
+            filler_words: "{\n  \"filler_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The speech demonstrates exceptional clarity with minimal filler words. Only three notable instances were found: the softening qualifier 'around' when discussing typing speed, and two instances of 'fairly' and 'perhaps' when describing requirements. The speech maintains professional tone and direct communication throughout, with well-structured sentences and clear transitions between points.\"\n}"
+          },
+          content_relevance: {
+            content_relevance: "{\n  \"content_score\": 0,\n  \"issues\": 1,\n  \"justification\": \"The provided content appears to be a JSON transcript object rather than a user's answer that could be compared to a model answer. Without both a model answer and a user's response to compare, a meaningful content relevance evaluation cannot be performed.\"\n}"
           }
-        },
-        transcript: "Hello, this is a sample transcript of the audio content. The speaker discusses various topics with good clarity and appropriate pace. The content demonstrates strong vocabulary usage and grammatical accuracy throughout the presentation.",
-        speechMetrics: {
-          fluency: 8.5,
-          pace: 7.8,
-          clarity: 9.2,
-          volume: 8.0,
-          pronunciation: 8.7
-        },
-        languageMetrics: {
-          vocabulary: 8.9,
-          grammar: 9.1,
-          coherence: 8.3,
-          complexity: 7.6,
-          accuracy: 8.8
-        },
-        llmAnalysis: {
-          overallScore: 8.5,
-          strengths: [
-            "Excellent pronunciation and clarity",
-            "Strong grammatical structure",
-            "Appropriate vocabulary usage",
-            "Good pacing and fluency"
-          ],
-          improvements: [
-            "Could increase speech complexity",
-            "Add more varied vocabulary",
-            "Improve transitional phrases"
-          ],
-          summary: "The speaker demonstrates strong overall communication skills with excellent clarity and grammatical accuracy. There are opportunities to enhance complexity and vocabulary variety for even better performance."
         }
       };
       
@@ -199,7 +240,7 @@ export const AnalysisForm = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm">
+              <pre className="bg-gray-50 p-4 rounded-lg overflow-x-auto text-sm max-h-96">
                 {JSON.stringify(results.lambdaRawResponse, null, 2)}
               </pre>
             </CardContent>
@@ -220,106 +261,86 @@ export const AnalysisForm = () => {
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Speech Metrics */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Speech Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(results.speechMetrics).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="capitalize font-medium">{key}</span>
-                      <span className="font-bold text-lg">{value}/10</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${value * 10}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+          {/* Speech Metrics */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Speech Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="font-medium">Fluency Score</span>
+                  <span className="font-bold">{results.speech_metrics.fluency_score}/10</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Speech Rate (WPM)</span>
+                  <span className="font-bold">{results.speech_metrics.speech_rate_wpm}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Word Count</span>
+                  <span className="font-bold">{results.speech_metrics.word_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Duration (seconds)</span>
+                  <span className="font-bold">{results.speech_metrics.duration_seconds}</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="font-medium">Repeat Count</span>
+                  <span className="font-bold">{results.speech_metrics.repeat_count}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Avg Confidence</span>
+                  <span className="font-bold">{results.speech_metrics.avg_confidence}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Total Pause Time</span>
+                  <span className="font-bold">{results.speech_metrics.pause_total_seconds}s</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Avg Pause Time</span>
+                  <span className="font-bold">{results.speech_metrics.avg_pause_seconds}s</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Language Metrics */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Language Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(results.languageMetrics).map(([key, value]) => (
-                  <div key={key} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="capitalize font-medium">{key}</span>
-                      <span className="font-bold text-lg">{value}/10</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
-                        style={{ width: `${value * 10}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* LLM Analysis */}
+          {/* Language Analysis */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="h-5 w-5" />
-                LLM Analysis
+                Language Analysis
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  {results.llmAnalysis.overallScore}/10
-                </div>
-                <p className="text-gray-600">Overall Score</p>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-green-600 mb-3">Strengths</h4>
-                  <ul className="space-y-2">
-                    {results.llmAnalysis.strengths.map((strength, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>{strength}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {Object.entries(results.analysis).map(([category, data]) => {
+                const analysisKey = category as keyof typeof data;
+                const analysisData = parseAnalysisScore(data[analysisKey] as string);
                 
-                <div>
-                  <h4 className="font-semibold text-orange-600 mb-3">Areas for Improvement</h4>
-                  <ul className="space-y-2">
-                    {results.llmAnalysis.improvements.map((improvement, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <span>{improvement}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Summary</h4>
-                <p className="text-gray-700 leading-relaxed">{results.llmAnalysis.summary}</p>
-              </div>
+                return (
+                  <div key={category} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-semibold capitalize text-lg">{category.replace('_', ' ')}</h4>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-600">Issues: {analysisData.issues}</span>
+                        <span className="text-xl font-bold text-blue-600">{analysisData.score}/10</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${analysisData.score * 10}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{analysisData.justification}</p>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
