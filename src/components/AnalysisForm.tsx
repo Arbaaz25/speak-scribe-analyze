@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Play, FileText, BarChart3, MessageSquare, Brain } from 'lucide-react';
+import { Loader2, Play, FileText, BarChart3, MessageSquare, Brain, Upload, Link } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AnalysisResults {
@@ -40,11 +39,29 @@ interface AnalysisResults {
 }
 
 export const AnalysisForm = () => {
+  const [inputMode, setInputMode] = useState<'url' | 'file'>('url');
   const [url, setUrl] = useState('');
+  const [audioFile, setAudioFile] = useState<File | null>(null);
   const [modelAnswer, setModelAnswer] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
   const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if it's an audio file
+      if (file.type.startsWith('audio/')) {
+        setAudioFile(file);
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select an audio file",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   const parseAnalysisScore = (analysisString: string): { score: number; issues: number; justification: string } => {
     try {
@@ -60,10 +77,12 @@ export const AnalysisForm = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!url.trim() || !modelAnswer.trim()) {
+    const hasInput = inputMode === 'url' ? url.trim() : audioFile;
+    
+    if (!hasInput || !modelAnswer.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide both URL and Model Answer",
+        description: "Please provide both audio input and Model Answer",
         variant: "destructive"
       });
       return;
@@ -142,20 +161,70 @@ export const AnalysisForm = () => {
             Input Parameters
           </CardTitle>
           <CardDescription>
-            Provide the audio URL and model answer for comprehensive analysis
+            Provide the audio source and model answer for comprehensive analysis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="url">Audio URL</Label>
-            <Input
-              id="url"
-              type="url"
-              placeholder="https://example.com/audio.wav"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="text-base"
-            />
+          <div className="space-y-4">
+            <Label>Audio Source</Label>
+            
+            {/* Toggle buttons */}
+            <div className="flex space-x-2 mb-4">
+              <Button
+                type="button"
+                variant={inputMode === 'url' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setInputMode('url')}
+                className="flex items-center gap-2"
+              >
+                <Link className="h-4 w-4" />
+                URL
+              </Button>
+              <Button
+                type="button"
+                variant={inputMode === 'file' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setInputMode('file')}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                File Upload
+              </Button>
+            </div>
+
+            {/* URL Input */}
+            {inputMode === 'url' && (
+              <div className="space-y-2">
+                <Label htmlFor="url">Audio URL</Label>
+                <Input
+                  id="url"
+                  type="url"
+                  placeholder="https://example.com/audio.wav"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="text-base"
+                />
+              </div>
+            )}
+
+            {/* File Upload */}
+            {inputMode === 'file' && (
+              <div className="space-y-2">
+                <Label htmlFor="audioFile">Audio File</Label>
+                <Input
+                  id="audioFile"
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileChange}
+                  className="text-base"
+                />
+                {audioFile && (
+                  <p className="text-sm text-gray-600">
+                    Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">
