@@ -307,7 +307,7 @@ export const AnalysisForm = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex gap-7">
+          <div className="flex gap-4">
             <div className="w-full">
               <div className="space-y-4">
                 <Label>Audio Source</Label>
@@ -334,7 +334,7 @@ export const AnalysisForm = () => {
                 }
               </div>
 
-              <div className="space-y-2 mt-5">
+              <div className="space-y-2 my-5 ">
                 <Label htmlFor="modelAnswer">What is the topic about ?</Label>
                 <Textarea
                   id="modelAnswer"
@@ -345,9 +345,27 @@ export const AnalysisForm = () => {
                   className="text-base resize-none"
                 />
               </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Analyzing Audio...
+                  </>
+                ) : (
+                  <>
+                    <BarChart3 className="mr-2 h-5 w-5" />
+                    Analyze Audio
+                  </>
+                )}
+              </Button>
             </div>
+            <div className="w-px h-full bg-black mx-2" />
             {/* Analysis Weights */}
-            <div className="w-full">
+            <div className="w-full border border-gray-200 rounded-lg p-4 bg-gray-50">
               <div className="space-y-4">
                 <h3 className="font-medium">Customize Weightage</h3>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -405,23 +423,6 @@ export const AnalysisForm = () => {
               </div>
             </div>
           </div>
-          <Button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing}
-            className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Analyzing Audio...
-              </>
-            ) : (
-              <>
-                <BarChart3 className="mr-2 h-5 w-5" />
-                Analyze Audio
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
 
@@ -511,22 +512,20 @@ export const AnalysisForm = () => {
                     ),
                   };
 
-                 const totalWeight =
+                  const totalWeight =
                     weights.grammar_weight +
                     weights.vocabulary_weight +
                     weights.coherence_weight +
                     weights.filler_weight +
                     weights.content_weight +
-                    weights.fluency_weight
-                ;
- 
+                    weights.fluency_weight;
                   const weightedScore =
                     (scores.grammar * weights.grammar_weight +
                       scores.vocabulary * weights.vocabulary_weight +
                       scores.coherence * weights.coherence_weight +
                       scores.filler * weights.filler_weight +
                       scores.content * weights.content_weight +
-                      scores.fluency * weights.fluency_weight ) /
+                      scores.fluency * weights.fluency_weight) /
                     totalWeight;
 
                   return weightedScore * 10;
@@ -562,6 +561,7 @@ export const AnalysisForm = () => {
                   typeof jsonString === "string"
                     ? JSON.parse(jsonString)
                     : jsonString;
+                console.log(analysisData);
               } catch (error) {
                 console.error(`Error parsing ${category}:`, error);
                 return null; // Skip rendering this item if parsing fails
@@ -574,6 +574,7 @@ export const AnalysisForm = () => {
                 analysisData[`${category}_score`] ||
                 analysisData.score ||
                 analysisData.filler_score ||
+                analysisData.content_score ||
                 0;
 
               return (
