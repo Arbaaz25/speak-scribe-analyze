@@ -260,7 +260,7 @@ export const AnalysisForm = () => {
             Input Parameters
           </CardTitle>
           <CardDescription>
-            Provide the audio source and model answer for comprehensive analysis
+            Upload an audio file and provide the model answer for comprehensive analysis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
