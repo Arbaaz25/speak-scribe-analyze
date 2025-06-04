@@ -1,11 +1,32 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Loader2, Play, FileText, BarChart3, MessageSquare, Brain, Upload, Link } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Loader2,
+  Play,
+  FileText,
+  BarChart3,
+  MessageSquare,
+  Brain,
+  Upload,
+  Link,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface AnalysisResults {
   transcript: string;
@@ -27,7 +48,7 @@ interface AnalysisResults {
       vocabulary: string;
     };
     coherence: {
-      coherence: string;
+      content_relevance: string; // Note this changed from coherence
     };
     filler_words: {
       filler_words: string;
@@ -36,106 +57,183 @@ interface AnalysisResults {
       content_relevance: string;
     };
   };
+  // Add any additional fields from the API response if needed
 }
 
+interface AnalysisWeights {
+  coherence_weight: number;
+  filler_weight: number;
+  fluency_weight: number;
+  confidence_weight: number;
+  grammar_weight: number;
+  vocabulary_weight: number;
+  speech_rate_weight: number;
+  content_weight: number;
+}
+
+const MetricItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number;
+}) => (
+  <div className="flex justify-between items-center bg-gray-50 p-2 rounded">
+    <span className="text-sm font-medium text-gray-600">{label}</span>
+    <span className="font-bold">{value}</span>
+  </div>
+);
+
+const WeightSlider = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) => (
+  <div className="space-y-2">
+    <div className="flex justify-between">
+      <Label className="text-sm">{label}</Label>
+      <span className="text-sm font-medium">{value.toFixed(2)}</span>
+    </div>
+    <Input
+      type="range"
+      min={0}
+      max={1}
+      step={0.05}
+      value={value}
+      onChange={(e) => onChange(parseFloat(e.target.value))}
+      className="w-full"
+    />
+  </div>
+);
+
 export const AnalysisForm = () => {
-  const [inputMode, setInputMode] = useState<'url' | 'file'>('url');
-  const [url, setUrl] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [modelAnswer, setModelAnswer] = useState('');
+  const [modelAnswer, setModelAnswer] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [weights, setWeights] = useState<AnalysisWeights>({
+    coherence_weight: 0.15,
+    filler_weight: 0.1,
+    fluency_weight: 0.1,
+    confidence_weight: 0.1,
+    grammar_weight: 0.15,
+    vocabulary_weight: 0.15,
+    speech_rate_weight: 0.1,
+    content_weight: 0.15,
+  });
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if it's an audio file
-      if (file.type.startsWith('audio/')) {
+      const allowedExtensions = [
+        ".mp3",
+        ".mp4",
+        ".wav",
+        ".flac",
+        ".ogg",
+        ".amr",
+        ".webm",
+      ];
+      const fileName = file.name.toLowerCase();
+      const isValidExtension = allowedExtensions.some((ext) =>
+        fileName.endsWith(ext)
+      );
+
+      if (isValidExtension) {
         setAudioFile(file);
       } else {
         toast({
           title: "Invalid File Type",
-          description: "Please select an audio file",
-          variant: "destructive"
+          description:
+            "Please select a valid audio file (.mp3, .mp4, .wav, .flac, .ogg, .amr, .webm)",
+          variant: "destructive",
         });
       }
     }
   };
 
-  const parseAnalysisScore = (analysisString: string): { score: number; issues: number; justification: string } => {
+  const parseAnalysisScore = (
+    analysisString: string
+  ): { score: number; issues: number; justification: string } => {
     try {
       const parsed = JSON.parse(analysisString);
       return {
-        score: parsed.grammar_score || parsed.vocabulary_score || parsed.coherence_score || parsed.filler_score || parsed.content_score || 0,
+        score:
+          parsed.grammar_score ||
+          parsed.vocabulary_score ||
+          parsed.coherence_score ||
+          parsed.filler_score ||
+          parsed.content_score ||
+          0,
         issues: parsed.issues || 0,
-        justification: parsed.justification || "No analysis available"
+        justification: parsed.justification || "No analysis available",
       };
     } catch {
       return { score: 0, issues: 0, justification: "Failed to parse analysis" };
     }
   };
 
+  const createFormData = (file: File, modelAnswer: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("model_answer", modelAnswer);
+
+    // Add weights from state
+    Object.entries(weights).forEach(([key, value]) => {
+      formData.append(key, value.toString());
+    });
+
+    return formData;
+  };
+
   const handleAnalyze = async () => {
-    const hasInput = inputMode === 'url' ? url.trim() : audioFile;
-    
+    const hasInput = audioFile;
+
     if (!hasInput || !modelAnswer.trim()) {
       toast({
         title: "Missing Information",
         description: "Please provide both audio input and Model Answer",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsAnalyzing(true);
-    
+
     try {
-      // Simulate API call with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Use the provided data structure
-      const mockResults: AnalysisResults = {
-        transcript: "Wondering how to pass a transcription test, we are here to help you out. A general transcriptionist usually does not need prior education or experience to get transcription jobs, but must pass a test based on typing speed and accuracy in spelling and grammar. Here are some tips to remember. Firstly, you need to type fairly fast for the sake of being productive and meeting deadlines. Find out what the company's minimum typing speed is. Stricter companies tend to set a minimum level of around 50 words per minute, while more flexible firms might go as low as 25 words per minute, or perhaps no minimum at all if deadlines are not as important. You can improve your typing speed by searching for online typing tutorials. Generally speaking, your hands and fingers need to be placed properly and comfortably instead of using the very slow one finger at a time method. Memorizing where letters and numbers are placed on the keyboard will help accelerate the learning process. Secondly, you should have a deep vocabulary in understanding a professional versus common or colloquial usage of terminology and structure. Thirdly, have spell check on your computer to double check your spelling. Fourthly, download any popular and free transcription software to help you practice transcribing before taking the test. Last but not least, adhere to instructions and follow the style guide. Proofread your work before submitting and run a spell check. For more tips to succeed as a transcriptionist, subscribe to our YouTube channel.",
-        speech_metrics: {
-          fluency_score: 8.5,
-          speech_rate_wpm: 173.14,
-          repeat_count: 0,
-          avg_confidence: 1.0,
-          pause_total_seconds: 10.07,
-          avg_pause_seconds: 0.84,
-          word_count: 251,
-          duration_seconds: 86.98
-        },
-        analysis: {
-          grammar: {
-            grammar: "{\n  \"grammar_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The text demonstrates strong grammatical accuracy with only minor issues: one instance of awkward article usage ('a deep vocabulary in understanding'), slight preposition inconsistency in 'based on typing speed' vs. 'based in typing speed', and a minor structural issue in the transition 'Last but not least.' Overall sentence structure, subject-verb agreement, tense consistency, and word forms are excellent throughout.\"\n}"
-          },
-          vocabulary: {
-            vocabulary: "{\n  \"vocabulary_score\": 8,\n  \"issues\": 4,\n  \"justification\": \"The response demonstrates sophisticated vocabulary with domain-specific terms like 'transcriptionist', 'colloquial', and 'terminology'. Strong lexical variation is evident through precise word choices ('adhere', 'accelerate', 'flexible'). Minor issues include some repetition of basic terms like 'typing' and 'spell check'. Overall maintains professional register with appropriate technical language for the context.\"\n}"
-          },
-          coherence: {
-            coherence: "{\n  \"coherence_score\": 9,\n  \"issues\": 2,\n  \"justification\": \"The response demonstrates excellent structural organization with clear enumeration (firstly through lastly) and logical progression of ideas about transcription test preparation. Strong thematic consistency throughout, with well-connected points building on each other. Effective use of transitions and cohesive devices. Only minor issues: slight redundancy in spell-check mentions and an abrupt shift to YouTube promotion at the end.\"\n}"
-          },
-          filler_words: {
-            filler_words: "{\n  \"filler_score\": 9,\n  \"issues\": 3,\n  \"justification\": \"The speech demonstrates exceptional clarity with minimal filler words. Only three notable instances were found: the softening qualifier 'around' when discussing typing speed, and two instances of 'fairly' and 'perhaps' when describing requirements. The speech maintains professional tone and direct communication throughout, with well-structured sentences and clear transitions between points.\"\n}"
-          },
-          content_relevance: {
-            content_relevance: "{\n  \"content_score\": 0,\n  \"issues\": 1,\n  \"justification\": \"The provided content appears to be a JSON transcript object rather than a user's answer that could be compared to a model answer. Without both a model answer and a user's response to compare, a meaningful content relevance evaluation cannot be performed.\"\n}"
-          }
-        }
-      };
-      
-      setResults(mockResults);
+      const formData = createFormData(audioFile, modelAnswer);
+
+      const response = await fetch("http://13.201.153.19/ai_grading/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data); // Log the response
+
+      setResults(data);
       toast({
         title: "Analysis Complete",
         description: "Your audio has been successfully analyzed",
       });
     } catch (error) {
+      console.error("Analysis Error:", error); // Log any errors
       toast({
         title: "Analysis Failed",
-        description: "There was an error processing your request",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "There was an error processing your request",
+        variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
@@ -149,7 +247,8 @@ export const AnalysisForm = () => {
           Speech & Language Analysis Tool
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Analyze audio content for speech quality, language proficiency, and get comprehensive AI-powered insights
+          Analyze audio content for speech quality, language proficiency, and
+          get comprehensive AI-powered insights
         </p>
       </div>
 
@@ -167,66 +266,29 @@ export const AnalysisForm = () => {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <Label>Audio Source</Label>
-            
-            {/* Toggle buttons */}
-            <div className="flex space-x-2 mb-4">
-              <Button
-                type="button"
-                variant={inputMode === 'url' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setInputMode('url')}
-                className="flex items-center gap-2"
-              >
-                <Link className="h-4 w-4" />
-                URL
-              </Button>
-              <Button
-                type="button"
-                variant={inputMode === 'file' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setInputMode('file')}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                File Upload
-              </Button>
-            </div>
-
-            {/* URL Input */}
-            {inputMode === 'url' && (
-              <div className="space-y-2">
-                <Label htmlFor="url">Audio URL</Label>
-                <Input
-                  id="url"
-                  type="url"
-                  placeholder="https://example.com/audio.wav"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="text-base"
-                />
-              </div>
-            )}
 
             {/* File Upload */}
-            {inputMode === 'file' && (
+            {
               <div className="space-y-2">
                 <Label htmlFor="audioFile">Audio File</Label>
                 <Input
                   id="audioFile"
                   type="file"
-                  accept="audio/*"
+                  accept=".mp3,.mp4,.wav,.flac,.ogg,.amr,.webm"
                   onChange={handleFileChange}
                   className="text-base"
                 />
+
                 {audioFile && (
                   <p className="text-sm text-gray-600">
-                    Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
+                    Selected: {audioFile.name} (
+                    {(audioFile.size / 1024 / 1024).toFixed(2)} MB)
                   </p>
                 )}
               </div>
-            )}
+            }
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="modelAnswer">Model Answer</Label>
             <Textarea
@@ -238,9 +300,72 @@ export const AnalysisForm = () => {
               className="text-base"
             />
           </div>
-          
-          <Button 
-            onClick={handleAnalyze} 
+
+          {/* Analysis Weights */}
+          <div className="space-y-4">
+            <h3 className="font-medium">Analysis Weights</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <WeightSlider
+                label="Coherence"
+                value={weights.coherence_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, coherence_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Filler Words"
+                value={weights.filler_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, filler_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Fluency"
+                value={weights.fluency_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, fluency_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Confidence"
+                value={weights.confidence_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, confidence_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Grammar"
+                value={weights.grammar_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, grammar_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Vocabulary"
+                value={weights.vocabulary_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, vocabulary_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Speech Rate"
+                value={weights.speech_rate_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, speech_rate_weight: value }))
+                }
+              />
+              <WeightSlider
+                label="Content"
+                value={weights.content_weight}
+                onChange={(value) =>
+                  setWeights((prev) => ({ ...prev, content_weight: value }))
+                }
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={handleAnalyze}
             disabled={isAnalyzing}
             className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
           >
@@ -262,21 +387,19 @@ export const AnalysisForm = () => {
       {/* Results */}
       {results && (
         <div className="grid gap-6">
-
           {/* Transcript */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="transcript">
+              <AccordionTrigger className="flex items-center gap-2 no-underline hover:no-underline focus:no-underline">
                 Transcript
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base leading-relaxed w-full mx-auto bg-blue-50 p-4 rounded-lg">
-                {results.transcript}
-              </p>
-            </CardContent>
-          </Card>
+              </AccordionTrigger>
+              <AccordionContent>
+                <p className="text-base leading-relaxed bg-blue-50 p-4 rounded-lg">
+                  {results.transcript}
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Speech Metrics */}
           <Card className="shadow-lg">
@@ -288,78 +411,122 @@ export const AnalysisForm = () => {
             </CardHeader>
             <CardContent className="grid md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Fluency Score</span>
-                  <span className="font-bold">{results.speech_metrics.fluency_score}/10</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Speech Rate (WPM)</span>
-                  <span className="font-bold">{results.speech_metrics.speech_rate_wpm}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Word Count</span>
-                  <span className="font-bold">{results.speech_metrics.word_count}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Duration (seconds)</span>
-                  <span className="font-bold">{results.speech_metrics.duration_seconds}</span>
-                </div>
+                <MetricItem
+                  label="Fluency Score"
+                  value={`${results.speech_metrics.fluency_score}/10`}
+                />
+                <MetricItem
+                  label="Speech Rate"
+                  value={`${results.speech_metrics.speech_rate_wpm} WPM`}
+                />
+                <MetricItem
+                  label="Word Count"
+                  value={results.speech_metrics.word_count}
+                />
+                <MetricItem
+                  label="Duration"
+                  value={`${results.speech_metrics.duration_seconds}s`}
+                />
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">Repeat Count</span>
-                  <span className="font-bold">{results.speech_metrics.repeat_count}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Avg Confidence</span>
-                  <span className="font-bold">{results.speech_metrics.avg_confidence}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Total Pause Time</span>
-                  <span className="font-bold">{results.speech_metrics.pause_total_seconds}s</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Avg Pause Time</span>
-                  <span className="font-bold">{results.speech_metrics.avg_pause_seconds}s</span>
-                </div>
+                <MetricItem
+                  label="Repeat Count"
+                  value={results.speech_metrics.repeat_count}
+                />
+                <MetricItem
+                  label="Confidence"
+                  value={`${(
+                    results.speech_metrics.avg_confidence * 100
+                  ).toFixed(1)}%`}
+                />
+                <MetricItem
+                  label="Total Pause"
+                  value={`${results.speech_metrics.pause_total_seconds}s`}
+                />
+                <MetricItem
+                  label="Avg Pause"
+                  value={`${results.speech_metrics.avg_pause_seconds}s`}
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Language Analysis */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Language Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {Object.entries(results.analysis).map(([category, data]) => {
-                const analysisKey = category as keyof typeof data;
-                const analysisData = parseAnalysisScore(data[analysisKey] as string);
-                
-                return (
-                  <div key={category} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-semibold capitalize text-lg">{category.replace('_', ' ')}</h4>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-600">Issues: {analysisData.issues}</span>
-                        <span className="text-xl font-bold text-blue-600">{analysisData.score}/10</span>
+          {/* Analysis Section */}
+          <Accordion type="single" collapsible className="w-full">
+            {Object.entries(results.analysis).map(([category, data]) => {
+              let analysisData;
+              try {
+                const jsonString =
+                  (data as Record<string, string>)[category];
+                analysisData =
+                  typeof jsonString === "string"
+                    ? JSON.parse(jsonString)
+                    : jsonString;
+              } catch (error) {
+                console.error(`Error parsing ${category}:`, error);
+                return null; // Skip rendering this item if parsing fails
+              }
+
+              // Skip if no valid analysis data
+              if (!analysisData) return null;
+
+              const score =
+                analysisData[`${category}_score`] ||
+                analysisData.score ||
+                analysisData.filler_score ||
+                0;
+
+              return (
+                <AccordionItem key={category} value={category}>
+                  <AccordionTrigger className="flex items-center gap-2 no-underline hover:no-underline focus:no-underline">
+                    <span className="capitalize">
+                      {category.replace(/_/g, " ")}
+                    </span>
+                    <span className="ml-auto text-sm font-medium">
+                      Score: {score}/10
+                    </span>
+                  </AccordionTrigger>
+
+                  <AccordionContent>
+                    <div className="space-y-4 p-4">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <h4 className="font-medium mb-2">Justification</h4>
+                        <p className="text-sm text-gray-700">
+                          {analysisData.justification ||
+                            "No justification provided"}
+                        </p>
                       </div>
+
+                      {analysisData.issues_detail &&
+                        analysisData.issues_detail.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium">Detailed Issues</h4>
+                            {analysisData.issues_detail.map(
+                              (issue: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="border-l-4 border-orange-400 pl-3 py-2"
+                                >
+                                  <p className="text-sm font-medium text-gray-700">
+                                    {issue.issue}
+                                  </p>
+                                  {issue.suggestion &&
+                                    issue.suggestion !== "N/A" && (
+                                      <p className="text-sm text-gray-600 mt-1 flex gap-2">
+                                       <p className="underline">Suggestion:</p>  {issue.suggestion}
+                                      </p>
+                                    )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${analysisData.score * 10}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{analysisData.justification}</p>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </div>
       )}
     </div>
