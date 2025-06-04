@@ -131,7 +131,7 @@ const ScoreDisplay = ({ score }: { score: number }) => {
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="flex flex-col items-center">
-          <div className="text-4xl font-bold">{(score/10).toFixed(1)}</div>
+          <div className="text-4xl font-bold">{(score / 10).toFixed(1)}</div>
           <div
             className={`mt-2 px-3 py-1 rounded-full text-white text-sm ${color}`}
           >
@@ -224,9 +224,8 @@ export const AnalysisForm = () => {
 
     // Add weights from state
     Object.entries(weights).forEach(([key, value]) => {
-      formData.append(key, value.toString());
+      formData.append(key, (1 / 8).toString());
     });
-
     return formData;
   };
 
@@ -281,10 +280,14 @@ export const AnalysisForm = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+      <div className="text-center mb-9">
+        <h1
+          className="text-4xl font-bold leading-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4"
+          style={{ backgroundSize: "100% 200%" }}
+        >
           Speech & Language Analysis Tool
         </h1>
+
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Analyze audio content for speech quality, language proficiency, and
           get comprehensive AI-powered insights
@@ -299,110 +302,109 @@ export const AnalysisForm = () => {
             Input Parameters
           </CardTitle>
           <CardDescription>
-            Upload an audio file and provide the model answer for comprehensive analysis
+            Upload an audio file and provide the model answer for comprehensive
+            analysis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <Label>Audio Source</Label>
+          <div className="flex gap-7">
+            <div className="w-full">
+              <div className="space-y-4">
+                <Label>Audio Source</Label>
 
-            {/* File Upload */}
-            {
-              <div className="space-y-2">
-                <Label htmlFor="audioFile">Audio File</Label>
-                <Input
-                  id="audioFile"
-                  type="file"
-                  accept=".mp3,.mp4,.wav,.flac,.ogg,.amr,.webm"
-                  onChange={handleFileChange}
-                  className="text-base"
-                />
+                {/* File Upload */}
+                {
+                  <div className="space-y-2">
+                    <Label htmlFor="audioFile">Audio File</Label>
+                    <Input
+                      id="audioFile"
+                      type="file"
+                      accept=".mp3,.mp4,.wav,.flac,.ogg,.amr,.webm"
+                      onChange={handleFileChange}
+                      className="text-base"
+                    />
 
-                {audioFile && (
-                  <p className="text-sm text-gray-600">
-                    Selected: {audioFile.name} (
-                    {(audioFile.size / 1024 / 1024).toFixed(2)} MB)
-                  </p>
-                )}
+                    {audioFile && (
+                      <p className="text-sm text-gray-600">
+                        Selected: {audioFile.name} (
+                        {(audioFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                    )}
+                  </div>
+                }
               </div>
-            }
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="modelAnswer">Model Answer</Label>
-            <Textarea
-              id="modelAnswer"
-              placeholder="Enter the expected or ideal answer for comparison..."
-              value={modelAnswer}
-              onChange={(e) => setModelAnswer(e.target.value)}
-              rows={4}
-              className="text-base"
-            />
-          </div>
+              <div className="space-y-2 mt-5">
+                <Label htmlFor="modelAnswer">What is the topic about ?</Label>
+                <Textarea
+                  id="modelAnswer"
+                  placeholder="Enter the expected or ideal answer for comparison..."
+                  value={modelAnswer}
+                  onChange={(e) => setModelAnswer(e.target.value)}
+                  rows={4}
+                  className="text-base resize-none"
+                />
+              </div>
+            </div>
+            {/* Analysis Weights */}
+            <div className="w-full">
+              <div className="space-y-4">
+                <h3 className="font-medium">Customize Weightage</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <WeightSlider
+                    label="Coherence"
+                    value={weights.coherence_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({
+                        ...prev,
+                        coherence_weight: value,
+                      }))
+                    }
+                  />
+                  <WeightSlider
+                    label="Filler Words"
+                    value={weights.filler_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({ ...prev, filler_weight: value }))
+                    }
+                  />
+                  <WeightSlider
+                    label="Fluency"
+                    value={weights.fluency_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({ ...prev, fluency_weight: value }))
+                    }
+                  />
 
-          {/* Analysis Weights */}
-          <div className="space-y-4">
-            <h3 className="font-medium">Analysis Weights</h3>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <WeightSlider
-                label="Coherence"
-                value={weights.coherence_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, coherence_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Filler Words"
-                value={weights.filler_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, filler_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Fluency"
-                value={weights.fluency_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, fluency_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Confidence"
-                value={weights.confidence_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, confidence_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Grammar"
-                value={weights.grammar_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, grammar_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Vocabulary"
-                value={weights.vocabulary_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, vocabulary_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Speech Rate"
-                value={weights.speech_rate_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, speech_rate_weight: value }))
-                }
-              />
-              <WeightSlider
-                label="Content"
-                value={weights.content_weight}
-                onChange={(value) =>
-                  setWeights((prev) => ({ ...prev, content_weight: value }))
-                }
-              />
+                  <WeightSlider
+                    label="Grammar"
+                    value={weights.grammar_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({ ...prev, grammar_weight: value }))
+                    }
+                  />
+                  <WeightSlider
+                    label="Vocabulary"
+                    value={weights.vocabulary_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({
+                        ...prev,
+                        vocabulary_weight: value,
+                      }))
+                    }
+                  />
+
+                  <WeightSlider
+                    label="Content Relevance"
+                    value={weights.content_weight}
+                    onChange={(value) =>
+                      setWeights((prev) => ({ ...prev, content_weight: value }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
           </div>
-
           <Button
             onClick={handleAnalyze}
             disabled={isAnalyzing}
@@ -500,24 +502,31 @@ export const AnalysisForm = () => {
                         .filler_score || 0
                     ),
                     content: parseFloat(
-                      JSON.parse(results.analysis.content_relevance.content_relevance)
-                        .content_score || 0
+                      JSON.parse(
+                        results.analysis.content_relevance.content_relevance
+                      ).content_score || 0
+                    ),
+                    fluency: parseFloat(
+                      String(results.speech_metrics.fluency_score || 0)
                     ),
                   };
 
-                  const totalWeight =
+                 const totalWeight =
                     weights.grammar_weight +
                     weights.vocabulary_weight +
                     weights.coherence_weight +
                     weights.filler_weight +
-                    weights.content_weight;
-
+                    weights.content_weight +
+                    weights.fluency_weight
+                ;
+ 
                   const weightedScore =
-                    ((scores.grammar * weights.grammar_weight) +
-                      (scores.vocabulary * weights.vocabulary_weight) +
-                      (scores.coherence * weights.coherence_weight) +
-                      (scores.filler * weights.filler_weight) +
-                      (scores.content * weights.content_weight)) /
+                    (scores.grammar * weights.grammar_weight +
+                      scores.vocabulary * weights.vocabulary_weight +
+                      scores.coherence * weights.coherence_weight +
+                      scores.filler * weights.filler_weight +
+                      scores.content * weights.content_weight +
+                      scores.fluency * weights.fluency_weight ) /
                     totalWeight;
 
                   return weightedScore * 10;
@@ -548,8 +557,7 @@ export const AnalysisForm = () => {
             {Object.entries(results.analysis).map(([category, data]) => {
               let analysisData;
               try {
-                const jsonString =
-                  (data as Record<string, string>)[category];
+                const jsonString = (data as Record<string, string>)[category];
                 analysisData =
                   typeof jsonString === "string"
                     ? JSON.parse(jsonString)
@@ -605,7 +613,8 @@ export const AnalysisForm = () => {
                                   {issue.suggestion &&
                                     issue.suggestion !== "N/A" && (
                                       <p className="text-sm text-gray-600 mt-1 flex gap-2">
-                                       <p className="underline">Suggestion:</p>  {issue.suggestion}
+                                        <p className="underline">Suggestion:</p>{" "}
+                                        {issue.suggestion}
                                       </p>
                                     )}
                                 </div>
