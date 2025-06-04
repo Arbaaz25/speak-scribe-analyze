@@ -1,10 +1,12 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Play, FileText, BarChart3, MessageSquare, Brain, Upload, Link } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Loader2, Play, BarChart3, MessageSquare, Brain, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AnalysisResults {
@@ -39,8 +41,6 @@ interface AnalysisResults {
 }
 
 export const AnalysisForm = () => {
-  const [inputMode, setInputMode] = useState<'url' | 'file'>('url');
-  const [url, setUrl] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [modelAnswer, setModelAnswer] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -77,12 +77,10 @@ export const AnalysisForm = () => {
   };
 
   const handleAnalyze = async () => {
-    const hasInput = inputMode === 'url' ? url.trim() : audioFile;
-    
-    if (!hasInput || !modelAnswer.trim()) {
+    if (!audioFile || !modelAnswer.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please provide both audio input and Model Answer",
+        description: "Please provide both audio file and Model Answer",
         variant: "destructive"
       });
       return;
@@ -161,70 +159,26 @@ export const AnalysisForm = () => {
             Input Parameters
           </CardTitle>
           <CardDescription>
-            Provide the audio source and model answer for comprehensive analysis
+            Upload an audio file and provide the model answer for comprehensive analysis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
-            <Label>Audio Source</Label>
-            
-            {/* Toggle buttons */}
-            <div className="flex space-x-2 mb-4">
-              <Button
-                type="button"
-                variant={inputMode === 'url' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setInputMode('url')}
-                className="flex items-center gap-2"
-              >
-                <Link className="h-4 w-4" />
-                URL
-              </Button>
-              <Button
-                type="button"
-                variant={inputMode === 'file' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setInputMode('file')}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                File Upload
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="audioFile">Audio File</Label>
+              <Input
+                id="audioFile"
+                type="file"
+                accept="audio/*"
+                onChange={handleFileChange}
+                className="text-base"
+              />
+              {audioFile && (
+                <p className="text-sm text-gray-600">
+                  Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
             </div>
-
-            {/* URL Input */}
-            {inputMode === 'url' && (
-              <div className="space-y-2">
-                <Label htmlFor="url">Audio URL</Label>
-                <Input
-                  id="url"
-                  type="url"
-                  placeholder="https://example.com/audio.wav"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="text-base"
-                />
-              </div>
-            )}
-
-            {/* File Upload */}
-            {inputMode === 'file' && (
-              <div className="space-y-2">
-                <Label htmlFor="audioFile">Audio File</Label>
-                <Input
-                  id="audioFile"
-                  type="file"
-                  accept="audio/*"
-                  onChange={handleFileChange}
-                  className="text-base"
-                />
-                {audioFile && (
-                  <p className="text-sm text-gray-600">
-                    Selected: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
-                  </p>
-                )}
-              </div>
-            )}
           </div>
           
           <div className="space-y-2">
@@ -262,22 +216,6 @@ export const AnalysisForm = () => {
       {/* Results */}
       {results && (
         <div className="grid gap-6">
-
-          {/* Transcript */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Transcript
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base leading-relaxed w-full mx-auto bg-blue-50 p-4 rounded-lg">
-                {results.transcript}
-              </p>
-            </CardContent>
-          </Card>
-
           {/* Speech Metrics */}
           <Card className="shadow-lg">
             <CardHeader>
@@ -326,38 +264,179 @@ export const AnalysisForm = () => {
             </CardContent>
           </Card>
 
-          {/* Language Analysis */}
+          {/* Analysis Results as Accordions */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="h-5 w-5" />
-                Language Analysis
+                Analysis Results
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {Object.entries(results.analysis).map(([category, data]) => {
-                const analysisKey = category as keyof typeof data;
-                const analysisData = parseAnalysisScore(data[analysisKey] as string);
-                
-                return (
-                  <div key={category} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-semibold capitalize text-lg">{category.replace('_', ' ')}</h4>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-600">Issues: {analysisData.issues}</span>
-                        <span className="text-xl font-bold text-blue-600">{analysisData.score}/10</span>
+            <CardContent>
+              <Accordion type="multiple" className="w-full">
+                {/* Transcript Accordion */}
+                <AccordionItem value="transcript">
+                  <AccordionTrigger className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Transcript
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-base leading-relaxed bg-blue-50 p-4 rounded-lg">
+                      {results.transcript}
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Grammar Analysis */}
+                <AccordionItem value="grammar">
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full mr-4">
+                      <span>Grammar Analysis</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {parseAnalysisScore(results.analysis.grammar.grammar).score}/10
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Issues: {parseAnalysisScore(results.analysis.grammar.grammar).issues}
+                        </span>
                       </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${parseAnalysisScore(results.analysis.grammar.grammar).score * 10}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {parseAnalysisScore(results.analysis.grammar.grammar).justification}
+                      </p>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${analysisData.score * 10}%` }}
-                      ></div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Vocabulary Analysis */}
+                <AccordionItem value="vocabulary">
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full mr-4">
+                      <span>Vocabulary Analysis</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {parseAnalysisScore(results.analysis.vocabulary.vocabulary).score}/10
+                      </span>
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{analysisData.justification}</p>
-                  </div>
-                );
-              })}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Issues: {parseAnalysisScore(results.analysis.vocabulary.vocabulary).issues}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${parseAnalysisScore(results.analysis.vocabulary.vocabulary).score * 10}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {parseAnalysisScore(results.analysis.vocabulary.vocabulary).justification}
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Coherence Analysis */}
+                <AccordionItem value="coherence">
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full mr-4">
+                      <span>Coherence Analysis</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {parseAnalysisScore(results.analysis.coherence.coherence).score}/10
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Issues: {parseAnalysisScore(results.analysis.coherence.coherence).issues}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${parseAnalysisScore(results.analysis.coherence.coherence).score * 10}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {parseAnalysisScore(results.analysis.coherence.coherence).justification}
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Filler Words Analysis */}
+                <AccordionItem value="filler_words">
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full mr-4">
+                      <span>Filler Words Analysis</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {parseAnalysisScore(results.analysis.filler_words.filler_words).score}/10
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Issues: {parseAnalysisScore(results.analysis.filler_words.filler_words).issues}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${parseAnalysisScore(results.analysis.filler_words.filler_words).score * 10}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {parseAnalysisScore(results.analysis.filler_words.filler_words).justification}
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Content Relevance Analysis */}
+                <AccordionItem value="content_relevance">
+                  <AccordionTrigger>
+                    <div className="flex justify-between items-center w-full mr-4">
+                      <span>Content Relevance Analysis</span>
+                      <span className="text-xl font-bold text-blue-600">
+                        {parseAnalysisScore(results.analysis.content_relevance.content_relevance).score}/10
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">
+                          Issues: {parseAnalysisScore(results.analysis.content_relevance.content_relevance).issues}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${parseAnalysisScore(results.analysis.content_relevance.content_relevance).score * 10}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {parseAnalysisScore(results.analysis.content_relevance.content_relevance).justification}
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
         </div>
