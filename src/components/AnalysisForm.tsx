@@ -48,7 +48,7 @@ interface AnalysisResults {
       vocabulary: string;
     };
     coherence: {
-      content_relevance: string; // Note this changed from coherence
+      coherence: string;
     };
     filler_words: {
       filler_words: string;
@@ -109,6 +109,45 @@ const WeightSlider = ({
     />
   </div>
 );
+
+const getScoreDescriptor = (score: number) => {
+  if (score >= 90) return { text: "Excellent", color: "bg-green-500" };
+  if (score >= 75) return { text: "Very Good", color: "bg-green-400" };
+  if (score >= 60) return { text: "Good", color: "bg-blue-500" };
+  if (score >= 50) return { text: "Average", color: "bg-yellow-500" };
+  if (score >= 35) return { text: "Below Average", color: "bg-orange-500" };
+  return { text: "Needs Improvement", color: "bg-red-500" };
+};
+
+const ScoreDisplay = ({ score }: { score: number }) => {
+  const { text, color } = getScoreDescriptor(score);
+  return (
+    <Card className="shadow-lg">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Brain className="h-5 w-5" />
+          Overall Score
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="flex flex-col items-center">
+          <div className="text-4xl font-bold">{(score/10).toFixed(1)}</div>
+          <div
+            className={`mt-2 px-3 py-1 rounded-full text-white text-sm ${color}`}
+          >
+            {text}
+          </div>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+          <div
+            className={`h-2.5 rounded-full ${color}`}
+            style={{ width: `${score}%` }}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const AnalysisForm = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -387,6 +426,109 @@ export const AnalysisForm = () => {
       {/* Results */}
       {results && (
         <div className="grid gap-6">
+          {/* First row with metrics and score */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Speech Metrics */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Speech Metrics
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <MetricItem
+                    label="Fluency Score"
+                    value={`${results.speech_metrics.fluency_score}/10`}
+                  />
+                  <MetricItem
+                    label="Speech Rate"
+                    value={`${results.speech_metrics.speech_rate_wpm} WPM`}
+                  />
+                  <MetricItem
+                    label="Word Count"
+                    value={results.speech_metrics.word_count}
+                  />
+                  <MetricItem
+                    label="Duration"
+                    value={`${results.speech_metrics.duration_seconds}s`}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <MetricItem
+                    label="Repeat Count"
+                    value={results.speech_metrics.repeat_count}
+                  />
+                  <MetricItem
+                    label="Confidence"
+                    value={`${(
+                      results.speech_metrics.avg_confidence * 100
+                    ).toFixed(1)}%`}
+                  />
+                  <MetricItem
+                    label="Total Pause"
+                    value={`${results.speech_metrics.pause_total_seconds}s`}
+                  />
+                  <MetricItem
+                    label="Avg Pause"
+                    value={`${results.speech_metrics.avg_pause_seconds}s`}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Overall Score */}
+            <ScoreDisplay
+              score={(() => {
+                try {
+                  const scores = {
+                    grammar: parseFloat(
+                      JSON.parse(results.analysis.grammar.grammar)
+                        .grammar_score || 0
+                    ),
+                    vocabulary: parseFloat(
+                      JSON.parse(results.analysis.vocabulary.vocabulary)
+                        .vocabulary_score || 0
+                    ),
+                    coherence: parseFloat(
+                      JSON.parse(results.analysis.coherence.coherence)
+                        .coherence_score || 0
+                    ),
+                    filler: parseFloat(
+                      JSON.parse(results.analysis.filler_words.filler_words)
+                        .filler_score || 0
+                    ),
+                    content: parseFloat(
+                      JSON.parse(results.analysis.content_relevance.content_relevance)
+                        .content_score || 0
+                    ),
+                  };
+
+                  const totalWeight =
+                    weights.grammar_weight +
+                    weights.vocabulary_weight +
+                    weights.coherence_weight +
+                    weights.filler_weight +
+                    weights.content_weight;
+
+                  const weightedScore =
+                    ((scores.grammar * weights.grammar_weight) +
+                      (scores.vocabulary * weights.vocabulary_weight) +
+                      (scores.coherence * weights.coherence_weight) +
+                      (scores.filler * weights.filler_weight) +
+                      (scores.content * weights.content_weight)) /
+                    totalWeight;
+
+                  return weightedScore * 10;
+                } catch (error) {
+                  console.error("Error calculating score:", error);
+                  return 0;
+                }
+              })()}
+            />
+          </div>
+
           {/* Transcript */}
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="transcript">
@@ -400,56 +542,6 @@ export const AnalysisForm = () => {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-
-          {/* Speech Metrics */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Speech Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <MetricItem
-                  label="Fluency Score"
-                  value={`${results.speech_metrics.fluency_score}/10`}
-                />
-                <MetricItem
-                  label="Speech Rate"
-                  value={`${results.speech_metrics.speech_rate_wpm} WPM`}
-                />
-                <MetricItem
-                  label="Word Count"
-                  value={results.speech_metrics.word_count}
-                />
-                <MetricItem
-                  label="Duration"
-                  value={`${results.speech_metrics.duration_seconds}s`}
-                />
-              </div>
-              <div className="space-y-3">
-                <MetricItem
-                  label="Repeat Count"
-                  value={results.speech_metrics.repeat_count}
-                />
-                <MetricItem
-                  label="Confidence"
-                  value={`${(
-                    results.speech_metrics.avg_confidence * 100
-                  ).toFixed(1)}%`}
-                />
-                <MetricItem
-                  label="Total Pause"
-                  value={`${results.speech_metrics.pause_total_seconds}s`}
-                />
-                <MetricItem
-                  label="Avg Pause"
-                  value={`${results.speech_metrics.avg_pause_seconds}s`}
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Analysis Section */}
           <Accordion type="single" collapsible className="w-full">
