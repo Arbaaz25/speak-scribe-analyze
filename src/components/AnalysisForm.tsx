@@ -561,7 +561,6 @@ export const AnalysisForm = () => {
                   typeof jsonString === "string"
                     ? JSON.parse(jsonString)
                     : jsonString;
-                console.log(analysisData);
               } catch (error) {
                 console.error(`Error parsing ${category}:`, error);
                 return null; // Skip rendering this item if parsing fails
